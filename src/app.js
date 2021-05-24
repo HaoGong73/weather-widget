@@ -1,6 +1,5 @@
 // api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={API key}
 // Parameters lat, lon	required	Geographical coordinates (latitude, longitude)
-const city = '';
 const appid =  '&appid=6cf1bc4601966648a8cbb5f80e540508';
 const urlHead = 'https://api.openweathermap.org/data/2.5/';
 const currentConditions = document.querySelector('.current-conditions');
@@ -41,41 +40,31 @@ const getLowestTempInADay = (array) => {
 
 const getWeekDayByTimestring = (timestring) => {
   const date = new Date(timestring);
+
   return new Intl.DateTimeFormat('en-US', { weekday: 'long'}).format(date);
 }
 
 const getForecastSeq = () => {
   let date = new Date();
+  
   return Math.floor(parseInt(date.getHours())/3);
 }
 
-const getCurrent = async (position, latitude, longitude) => {
-  let urlCurrent='';
-  if (position.trim().length !== 0) {
-    urlCurrent = `${urlHead}weather?q=${position}&units=metric${appid}`;
-  } else {
-    urlCurrent = `${urlHead}weather?lat=${latitude}&lon=${longitude}&units=metric${appid}`;
-  }
+const getCurrent = async (latitude, longitude) => {
+  let urlCurrent = `${urlHead}weather?lat=${latitude}&lon=${longitude}&units=metric${appid}`;
   
   const response = await fetch(urlCurrent);
   const data = await response.json();
-  // console.log(data);
   
   return data;
 }
 
-const getForecast = async (position, latitude, longitude) => {
-  let urlForecast='';
-  if (position.trim().length !== 0) {
-    urlForecast = `${urlHead}forecast?q=${position}&units=metric${appid}`;
-  } else {
-    urlForecast = `${urlHead}forecast?lat=${latitude}&lon=${longitude}&units=metric${appid}`;
-  }
+const getForecast = async (latitude, longitude) => {
+  let urlForecast = `${urlHead}forecast?lat=${latitude}&lon=${longitude}&units=metric${appid}`;
 
   const response = await fetch(urlForecast);
   const data = await response.json();
   
-  // console.log(data);
   return data.list;
 }
 
@@ -104,18 +93,15 @@ const organizeData = (forecastOBJ) => {
     }
     tempArr[tempArr.length] = element;
   });
-
-  if (tempArr.length > 0) {
-    forecastArray[forecastArray.length] = tempArr;
-  }
+  forecastArray[forecastArray.length] = tempArr;
 
   return forecastArray;
 }
 
-const renderOneDayHTML = (oneDay, sequence) => {
+const renderOneDayHTML = (oneDay) => {
   const weekDay = getWeekDayByTimestring(oneDay[0].dt_txt);
-  // console.log(oneDay);
-  if (sequence > oneDay.length-1) sequence =  oneDay.length-1;
+  let sequence = getForecastSeq() ;
+  sequence = sequence > oneDay.length - 1 ? oneDay.length - 1 : sequence;
   forecast.innerHTML +=   
   `<div class="day">
     <h3>${weekDay}</h3>
@@ -128,10 +114,8 @@ const renderOneDayHTML = (oneDay, sequence) => {
 }
 
 const renderForecastHTML = (forecastArray) => {
-  let sequence = getForecastSeq() ;
-  
   forecastArray.forEach(oneDay => {
-    renderOneDayHTML(oneDay, sequence);
+    renderOneDayHTML(oneDay);
   })
 }
 
@@ -144,12 +128,12 @@ let options = {
 function success(pos) {
   let crd = pos.coords;
 
-  getCurrent(city, crd.latitude, crd.longitude)
-  .then(data => renderCurrentHTML(data));
+  getCurrent(crd.latitude, crd.longitude)
+  .then((data) => renderCurrentHTML(data));
 
-  getForecast(city, crd.latitude, crd.longitude)
-  .then((data) => { return organizeData(data)})
-  .then(forecast5DaysArray => renderForecastHTML(forecast5DaysArray));
+  getForecast(crd.latitude, crd.longitude)
+  .then((data) => {return organizeData(data)})
+  .then((forecast5DaysArray) => renderForecastHTML(forecast5DaysArray));
 }
 
 function error(err) {
