@@ -46,7 +46,7 @@ const getWeekDayByTimestring = (timestring) => {
 
 const getForecastSeq = () => {
   let date = new Date();
-  
+
   return Math.floor(parseInt(date.getHours())/3);
 }
 
@@ -85,6 +85,8 @@ const organizeData = (forecastOBJ) => {
   let tempObj = forecastOBJ.filter(element => element.dt_txt.substr(0, 10) !== today);
   let dateOfForecast = tempObj[0].dt_txt.substr(0, 10);
 
+  console.log(forecastOBJ);
+
   tempObj.forEach(element => {
     if (dateOfForecast !== element.dt_txt.substr(0, 10)) {
       dateOfForecast = element.dt_txt.substr(0, 10);
@@ -93,7 +95,10 @@ const organizeData = (forecastOBJ) => {
     }
     tempArr[tempArr.length] = element;
   });
-  forecastArray[forecastArray.length] = tempArr;
+
+  if (forecastArray.length<5) {
+    forecastArray[forecastArray.length] = tempArr;
+  }
 
   return forecastArray;
 }
