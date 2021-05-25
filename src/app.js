@@ -9,39 +9,35 @@ forecast.innerHTML = '';
 
 const getTodayTimestring  = () => {
   const date = new Date();
-  let day = ('0' + date.getDate()).slice(-2);
-  let month = ('0' + (date.getMonth() + 1)).slice(-2);
-  let year = date.getFullYear();
-
-  return year + '-' + month + '-' + day;
+  return date.toLocaleString('en-CA').substr(0,10);
 }
 
 const getHighestTempInADay = (array) => {
-  let tempHighest = array[0].main.temp;
+  let tempHighest = array[0].main.temp_max;
   array.forEach(element => {
-    if(element.main.temp > tempHighest) {
-      tempHighest = element.main.temp;
+    if(element.main.temp_max > tempHighest) {
+      tempHighest = element.main.temp_max;
     }
   })
 
-  return parseInt(tempHighest);
+  return Math.round(tempHighest);
 }
 
 const getLowestTempInADay = (array) => {
-  let tempLowest = array[0].main.temp;
+  let tempLowest = array[0].main.temp_min;
   array.forEach(element => {
-    if(element.main.temp < tempLowest) {
-      tempLowest = element.main.temp;
+    if(element.main.temp_min < tempLowest) {
+      tempLowest = element.main.temp_min;
     }
   })
 
-  return parseInt(tempLowest);
+  return Math.round(tempLowest);
 }
 
 const getWeekDayByTimestring = (timestring) => {
-  const date = new Date(timestring);
+  const date = new Date(timestring + ' UTC');
 
-  return new Intl.DateTimeFormat('en-US', { weekday: 'long'}).format(date);
+  return date.toLocaleString('en-CA', {weekday: 'long'});
 }
 
 const getForecastSeq = () => {
@@ -78,28 +74,34 @@ const renderCurrentHTML = (current) => {
     </div>`
 }
 
+const getDayStringFromUTC = (UTCDayString) => {
+  return new Date(UTCDayString + ' UTC').toLocaleString('en-CA').substr(0,10);
+}
+
 const organizeData = (forecastOBJ) => {
   let tempArr = [];
   let forecastArray =[];
   let today = getTodayTimestring();
-  let tempObj = forecastOBJ.filter(element => element.dt_txt.substr(0, 10) !== today);
-  let dateOfForecast = tempObj[0].dt_txt.substr(0, 10);
-
-  console.log(forecastOBJ);
+  let tempObj = forecastOBJ.filter(element => {
+    return getDayStringFromUTC(element.dt_txt) !== today;
+  });
+  let dateOfForecast = getDayStringFromUTC(tempObj[0].dt_txt);
 
   tempObj.forEach(element => {
-    if (dateOfForecast !== element.dt_txt.substr(0, 10)) {
-      dateOfForecast = element.dt_txt.substr(0, 10);
+    let elementDayUTC = getDayStringFromUTC(element.dt_txt);
+    if (dateOfForecast !== elementDayUTC) {
+      dateOfForecast = elementDayUTC;
       forecastArray[forecastArray.length] = tempArr;
       tempArr = [];
     }
     tempArr[tempArr.length] = element;
   });
 
-  if (forecastArray.length<5) {
+  if (forecastArray.length < 5) {
     forecastArray[forecastArray.length] = tempArr;
   }
 
+  console.log(forecastArray);
   return forecastArray;
 }
 
