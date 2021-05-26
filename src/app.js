@@ -64,13 +64,23 @@ const getForecast = async (latitude, longitude) => {
   return data.list;
 }
 
+const prepareObjForRenderCurrentHTML = (current) => {
+  let currentObj = {};
+  
+  currentObj.iconId = current.weather[0].icon;
+  currentObj.temp = current.main.temp;
+  currentObj.desc = current.weather[0].description;
+  
+  return currentObj;
+}
+
 const renderCurrentHTML = (current) => {
   currentConditions.innerHTML = 
     `<h2>Current Conditions</h2>
-    <img src="http://openweathermap.org/img/wn/${current.weather[0].icon}@2x.png" />
+    <img src="http://openweathermap.org/img/wn/${current.iconId}@2x.png" />
     <div class="current">
-    <div class="temp">${parseInt(current.main.temp)}℃</div>
-    <div class="condition">${current.weather[0].description}</div>
+    <div class="temp">${parseInt(current.temp)}℃</div>
+    <div class="condition">${current.desc}</div>
     </div>`
 }
 
@@ -101,27 +111,40 @@ const organizeData = (forecastOBJ) => {
     forecastArray[forecastArray.length] = tempArr;
   }
 
-  console.log(forecastArray);
   return forecastArray;
 }
 
-const renderOneDayHTML = (oneDay) => {
-  const weekDay = getWeekDayByTimestring(oneDay[0].dt_txt);
-  let sequence = getForecastSeq() ;
-  sequence = sequence > oneDay.length - 1 ? oneDay.length - 1 : sequence;
+const prepareObjArrayForRender5DaystHTML = (forecast5DaysArray) => {
+  let forecastObjArray = [];
+  forecast5DaysArray.forEach(oneDay => {
+    let oneDayObj = {};
+    let sequence = getForecastSeq() ;
+    sequence = sequence > oneDay.length - 1 ? oneDay.length - 1 : sequence;
+    oneDayObj.weekDay = getWeekDayByTimestring(oneDay[0].dt_txt);
+    oneDayObj.icon = oneDay[sequence].weather[0].icon;
+    oneDayObj.hightTemp = getHighestTempInADay(oneDay);
+    oneDayObj.lowTemp = getLowestTempInADay(oneDay);
+    oneDayObj.desc = oneDay[sequence].weather[0].description;
+    forecastObjArray.push(oneDayObj);
+  })
+
+  return forecastObjArray;
+}
+
+const renderOneDayHTML = (oneDayObj) => {
   forecast.innerHTML +=   
   `<div class="day">
-    <h3>${weekDay}</h3>
-    <img src="http://openweathermap.org/img/wn/${oneDay[sequence].weather[0].icon}@2x.png" />
-    <div class="description">${oneDay[sequence].weather[0].description}</div>
+    <h3>${oneDayObj.weekDay}</h3>
+    <img src="http://openweathermap.org/img/wn/${oneDayObj.icon}@2x.png" />
+    <div class="description">${oneDayObj.desc}</div>
     <div class="temp">
-      <span class="high">${getHighestTempInADay(oneDay)}℃</span>/<span class="low">${getLowestTempInADay(oneDay)}℃</span>
+      <span class="high">${oneDayObj.hightTemp}℃</span>/<span class="low">${oneDayObj.lowTemp}℃</span>
     </div>
   </div>`;
 }
 
-const renderForecastHTML = (forecastArray) => {
-  forecastArray.forEach(oneDay => {
+const render5DaysForecastHTML = (forecastObjArray) => {
+  forecastObjArray.forEach(oneDay => {
     renderOneDayHTML(oneDay);
   })
 }
@@ -136,11 +159,13 @@ function success(pos) {
   let crd = pos.coords;
 
   getCurrent(crd.latitude, crd.longitude)
-  .then((data) => renderCurrentHTML(data));
+  .then((data) => {return prepareObjForRenderCurrentHTML(data)})
+  .then((currentWeather) => renderCurrentHTML(currentWeather));
 
   getForecast(crd.latitude, crd.longitude)
   .then((data) => {return organizeData(data)})
-  .then((forecast5DaysArray) => renderForecastHTML(forecast5DaysArray));
+  .then((forecast5DaysArray) => {return prepareObjArrayForRender5DaystHTML(forecast5DaysArray)})
+  .then((fiveDaysObjArray) => {render5DaysForecastHTML(fiveDaysObjArray)});
 }
 
 function error(err) {
